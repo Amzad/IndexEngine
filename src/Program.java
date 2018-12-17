@@ -20,9 +20,6 @@ public class Program extends Thread {
 	static LocalDateTime timeNow;
 
 	public static void main(String[] args) throws CloneNotSupportedException {
-		format = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-		timeNow = LocalDateTime.now();
-		Service service = new Service();
 
 		new Thread() {
 			public void run() {
@@ -57,16 +54,24 @@ public class Program extends Thread {
 
 			else if (command.toLowerCase().equals("u")) { // Check for V
 				if (db.hasNext()) {
+					long startTime = System.nanoTime();
+					
 					String keyword = db.getNext();
 					ArrayList<Book> booklist;
 					booklist = urlP.findBook(keyword);
+					int resultCount = urlP.getResultCount(keyword);
 
 					for (int i = 0; i < booklist.size(); i++) {
-						db.add(booklist.get(i));
-						db.saveImage(booklist.get(i));
-						System.out.println(booklist.get(i).title + " added into the database");
+						if (db.add(booklist.get(i)) == true) {
+							db.saveImage(booklist.get(i));
+						}
 					}
+					db.updateResult(keyword, resultCount);
 					System.out.println(booklist.size() + " total books added into the database");
+					long stopTime = System.nanoTime();
+					long elapsedTime = (stopTime - startTime)/1000000000;
+					System.out.println(elapsedTime);
+					Program.db.dequeue(keyword, booklist.size(), Long.toString(elapsedTime));
 				}
 			}
 
@@ -75,15 +80,19 @@ public class Program extends Thread {
 			}
 
 			else if (command.toLowerCase().equals("b")) { // Check for B
-				service.running = true;
-				service = new Service();
+				Service.running = true;
+				new Thread() {
+					public void run() {
+						Service service = new Service();
+					}
+				}.start();
 				System.out.println("Service started");
 			}
 
 			else if (command.toLowerCase().equals("e")) { // Check for E
-				service.running = false;
+				Service.running = false;
 				System.out.println("Waiting for service to end");
-				while (service.inProcess == true) {
+				while (Service.inProcess == true) {
 				}
 				System.out.println("Service ended");
 			}

@@ -16,7 +16,6 @@ import javax.imageio.ImageIO;
  */
 
 public class Database {
-	HashMap<String, Object> hmap = new HashMap<String, Object>();
 	
 	 static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
 	 static final String DB_URL = "jdbc:mysql://192.168.1.107/books";
@@ -40,23 +39,53 @@ public class Database {
 		try {	
 			System.out.println("Database: Connected");
 			conn = DriverManager.getConnection(DB_URL,USER,PASS);
-
 		} catch (SQLException e) {
 			System.out.println("Unable to connect to database");
-			//e.printStackTrace();
 		}
-
 	}
 	
-	public void dequeue(String keyword, int count) {
+	public void openConnection() {
 		try {	
+			System.out.println("Database: Connected");
+			conn = DriverManager.getConnection(DB_URL,USER,PASS);
+		} catch (SQLException e) {
+			System.out.println("Unable to connect to database");
+		}
+	}
+	
+	public void closeConnection() {
+		try {
+			conn.close();
+			System.out.println("Database: Disconnected");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void dequeue(String keyword, int count, String time) {
+		try {	
+			openConnection();
 			stmt = conn.createStatement();
 			String sql = "UPDATE indexqueue SET status = 'Done' WHERE keyword = '" + keyword + "'";
 			stmt.executeUpdate(sql);
 			sql = "UPDATE indexqueue SET count = '" + count + "' WHERE keyword = '" + keyword + "'";
 			stmt.executeUpdate(sql);
+			sql = "UPDATE indexqueue SET time = '" + time + "' WHERE keyword = '" + keyword + "'";
+			stmt.executeUpdate(sql);
 			System.out.println(keyword + " caching completed");
-
+			closeConnection();
+		} catch (SQLException e) {		
+			e.printStackTrace();
+		}
+	}
+	
+	public void updateResult(String keyword, int resultcount) {
+		try {	
+			openConnection();
+			stmt = conn.createStatement();
+			String sql = "UPDATE indexqueue SET resultcount = '" + resultcount + "' WHERE keyword = '" + keyword + "'";
+			stmt.executeUpdate(sql);
+			closeConnection();
 		} catch (SQLException e) {		
 			e.printStackTrace();
 		}
@@ -72,6 +101,7 @@ public class Database {
 	
 	public boolean hasNext() {
 		try {	
+			openConnection();
 			stmt = conn.createStatement();
 			String sql = "SELECT * FROM indexqueue WHERE status = 'Pending'";
 			
@@ -82,6 +112,8 @@ public class Database {
 		} catch (SQLException e) {
 			
 			e.printStackTrace();
+		} finally {
+			closeConnection();
 		}
 		
 		return false;
@@ -90,8 +122,9 @@ public class Database {
 	
 	public String getNext() {
 		try {	
+			openConnection();
 			stmt = conn.createStatement();
-			String sql = "SELECT * FROM indexqueue";
+			String sql = "SELECT * FROM indexqueue WHERE status = 'Pending'";
 			
 			ResultSet rs = stmt.executeQuery(sql);
 			
@@ -103,7 +136,10 @@ public class Database {
 		} catch (SQLException e) {
 			
 			e.printStackTrace();
+		} finally {
+			closeConnection();
 		}
+		
 		return null;
 	
 	}
@@ -114,6 +150,7 @@ public class Database {
 	 */
 	public boolean add(Book item) {
 		try {	
+			openConnection();
 			stmt = conn.createStatement();
 			String sql = "INSERT INTO db VALUES ('" + item.ISBN13 + "', '" 
 													+ item.title + "', '" 
@@ -123,10 +160,12 @@ public class Database {
 													+ item.ISBN10 + "', '" 
 													+ item.link + "', '1')";
 			stmt.executeUpdate(sql);
-			System.out.println(item.title + " added into database");
+			System.out.println(item.title + " added into the database");
 			return true;
 		} catch (SQLException e) {		
 			//e.printStackTrace();
+		} finally {
+			closeConnection();
 		}
 		return false;
 	}
@@ -137,9 +176,8 @@ public class Database {
 	 */
 	public Book remove(String isbn13) {
 		
-		Book temp = (Book) hmap.remove(isbn13);
-		
-		return temp;
+
+		return null;
 	}
 	
 	/**
@@ -148,17 +186,8 @@ public class Database {
 	 * @return Returns true if it exists
 	 */
 	public boolean ifExists(String isbn13) {
-		Iterator it = hmap.entrySet().iterator();
-		while (it.hasNext()) {
-
-			Map.Entry pair = (Map.Entry)it.next();
-			Book temp = (Book) pair.getValue();
-			
-			if (temp.getISBN13().equals(isbn13)) {
-				return true;
-			}
-		}
 		return false;
+
 	}
 
 	
@@ -171,7 +200,6 @@ public class Database {
 		try {
 			String workingDirectory = "C:\\AppServ\\www\\pictures\\";
 			url = new URL(link.imgLink);
-			System.out.println(url.toString());
 			BufferedImage img = ImageIO.read(url);
 			String file = url.getPath();
 			file = file.substring(file.lastIndexOf("/")+1, file.length());

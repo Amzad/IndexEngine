@@ -262,7 +262,7 @@ public class URLProcessor {
 							searchBook.setImage(imgLink);
 							bookList.add(searchBook);
 							count++;
-							System.out.println("New result: " + searchBook.title);
+							//System.out.println("New result: " + searchBook.title);
 							
 						}
 						
@@ -277,6 +277,43 @@ public class URLProcessor {
 			e.printStackTrace();
 		} 
 		return bookList;
+	}
+	
+public int getResultCount(String searchTerm) {
+		int count = 0;
+
+		URL url = generateSearchURL(searchTerm);
+
+		InputStream content = (InputStream) getURLInputStream(url);
+		BufferedReader bReader = new BufferedReader (new InputStreamReader(content));
+		
+		String resultCount = "0";
+		String pageCount = "0";
+
+		String resultNum = "of  <span class=\"search-count\">";
+		String dpage = "Showing 1 to";
+
+		try {
+			String line = bReader.readLine();
+				
+
+			while (line != null) {
+				
+				if (line.trim().startsWith(dpage)) {
+					pageCount = line.trim().split(" ")[3];	
+				}
+				
+				if (line.trim().startsWith(resultNum)) { // Find the results section.
+					resultCount = line.substring(line.indexOf(">")+1, line.lastIndexOf("<")); // Gets the result number
+					count = Integer.parseInt(resultCount);
+				}
+				
+				line = bReader.readLine();  // Goto next line
+			}	
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+		return count;
 	}
 	
 
