@@ -18,7 +18,7 @@ import javax.imageio.ImageIO;
 public class Database {
 	
 	 static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";  
-	 static final String DB_URL = "jdbc:mysql://192.168.1.107/books";
+	 static final String DB_URL = "jdbc:mysql://127.0.0.1/books";
 	 static final String USER = "Lays";
 	 static final String PASS = "Lays";
 	 static Connection conn = null;
